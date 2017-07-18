@@ -2,6 +2,31 @@
 #ifndef __SD_SPI_H
 #define __SD_SPI_H
 
+/*
+ * Definitions the SD card SPI hardware installations.
+ *
+ */
+
+/* ----------------- SD card I/O-s --------------------------------*/
+
+#define SPI2_SIGNAL_PORT	GPIOB
+
+#define SPI2_SIGNAL_PORT_CLK_ENABLE() __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define SPI2_CLK_PIN	GPIO_PIN_13
+#define SPI2_MOSI_PIN	GPIO_PIN_15
+#define SPI2_MISO_PIN	GPIO_PIN_14
+
+#define SD_CARD_CS_PORT	GPIOB
+#define SD_CARD_CS_PORT_CLK_ENABLE() __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define SD_CARD_CS_PIN	GPIO_PIN_11
+
+
+#define SELECT_SD()		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET)
+#define DESELECT_SD()	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET)
+
+
 /* Definitions and macros for SD card SPIcommunication.
  * SDCARD https://www.sdcard.org/downloads/pls/ 
  * Physical Layer Simplified Specification pdf */

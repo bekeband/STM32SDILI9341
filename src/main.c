@@ -6,6 +6,7 @@
 #include "interrupts.h"
 #include "init.h"
 #include "sd_spi.h"
+#include "ili9341_spi.h"
 
 /**
  System Clock, and osc configuration for 8000000 Hz Minimal STM 32 board.
@@ -59,10 +60,20 @@ int main()
 	
 	SD_SPI2_Init(); // Initialize SPI2 for SD card. 
 
+	DISPLAY_SPI1_Init();
+
 /* Main program loop. */
 	while (1)
 	{	
 		
+		while (1)
+		{
+			HAL_Delay(500);
+			DISPLAY_ON();
+			HAL_Delay(500);
+			DISPLAY_OFF();
+		}
+
 		if (GetSDCardCheckFlag())
 		{
 

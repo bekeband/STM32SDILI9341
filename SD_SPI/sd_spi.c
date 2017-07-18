@@ -4,7 +4,6 @@
 #include <string.h>
 #include "spi.h"
 #include "sd_spi.h"
-#include "init.h"
 #include "stm32f1xx_hal.h"
 
 /* CRC table for CRC7 procedure 

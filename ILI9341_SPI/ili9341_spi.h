@@ -1,0 +1,44 @@
+/*
+ * ili9341_spi.h
+ *
+ *  Created on: 2017. júl. 18.
+ *      Author: bekeband
+ */
+
+#ifndef ILI9341_SPI_ILI9341_SPI_H_
+#define ILI9341_SPI_ILI9341_SPI_H_
+
+/*
+ * Definitions the ILI9341 Display controller I/O ports..
+ *
+ */
+
+/* ----------------- Display SPI signal definitions --------------------------------*/
+
+#define SPI1_SIGNAL_PORT	GPIOA
+
+#define SPI1_SIGNAL_PORT_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define DISPLAY_SOGNAL_PORT_CLK_ENABLE()	__HAL_RCC_GPIOA_CLK_ENABLE()
+
+#define SPI1_CLK_PIN	GPIO_PIN_5
+#define SPI1_MOSI_PIN	GPIO_PIN_7
+#define SPI1_MISO_PIN	GPIO_PIN_6
+
+#define DISPLAY_CONTROL_PORT	GPIOA
+
+#define DISPLAY_CS_PIN	GPIO_PIN_4
+#define DISPLAY_DC_PIN	GPIO_PIN_2
+#define DISPLAY_RST_PIN	GPIO_PIN_3
+#define DISPLAY_LCD_PIN	GPIO_PIN_1
+
+
+#define SELECT_DISPLAY()	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)
+#define DESELECT_DISPLAY()	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET)
+
+#define DISPLAY_ON()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_LCD_PIN, GPIO_PIN_RESET)
+#define DISPLAY_OFF()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_LCD_PIN, GPIO_PIN_SET)
+
+
+void DISPLAY_SPI1_Init();
+
+#endif /* ILI9341_SPI_ILI9341_SPI_H_ */
