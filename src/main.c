@@ -61,7 +61,8 @@ int main()
 	SD_SPI2_Init(); // Initialize SPI2 for SD card. 
 
 	DISPLAY_SPI1_Init();
-
+	ILI9341_Init();
+uint8_t color;
 /* Main program loop. */
 	while (1)
 	{	
@@ -69,9 +70,13 @@ int main()
 		while (1)
 		{
 			HAL_Delay(500);
-			DISPLAY_ON();
-			HAL_Delay(500);
-			DISPLAY_OFF();
+//			DisplaySoftOn();
+			ILI9341_fillrectangle(10, 10, 40, 60, color);
+			color += 0x010;
+//			DISPLAY_ON();
+//			HAL_Delay(500);
+//			DisplaySoftOff();
+//			DISPLAY_OFF();
 		}
 
 		if (GetSDCardCheckFlag())
