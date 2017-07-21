@@ -31,6 +31,10 @@
  *      TE Line Mode 		Mode 1 (Note 3) 	Mode 1 (Note 3) 		Mode 1 (Note 3)
  */
 
+#include <stdint.h>
+#include "stm32f1xx_hal.h"
+
+
 #ifndef ILI9341_SPI_ILI9341_SPI_H_
 #define ILI9341_SPI_ILI9341_SPI_H_
 
@@ -87,7 +91,7 @@
 
 
 #define SELECT_DISPLAY()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_CS_PIN, GPIO_PIN_RESET)
-#define DESELECT_DISPLAY()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_CS_PIN, GPIO_PIN_SET)
+#define DESELECT_DISPLAY()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_CS_PIN, GPIO_PIN_RESET)
 
 #define RESET_ACTIVE()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_RST_PIN, GPIO_PIN_RESET)
 #define RESET_PASSIVE()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_RST_PIN, GPIO_PIN_SET)
@@ -103,7 +107,12 @@
 /*
  * Define the display spi1 memory to periphera tx DMA channel.
  */
-#define DISPLAY_TX_DMA_CHANNEL	DMA3
+#define DISPLAY_TX_DMA_CHANNEL	DMA1_Channel3
+#define DISPLAY_RX_DMA_CHANNEL	DMA1_Channel2
+
+#define DISPLAY_DMA_TX_IRQn	DMA1_Channel3_IRQn
+#define DISPLAY_DMA_RX_IRQn	DMA1_Channel2_IRQn
+
 
 /*
  * defines ILI9341 commands ----------------------------------
@@ -143,9 +152,13 @@
 #define ILI9341_READDID4			0xD3
 
 #define RGB_BGR_COLOR
-#define BYTEPERPIXEL	2
+#define BYTE_PER_PIXEL	2
+#define WORD_PER_PIXEL	1
 
 #define ILI9341_DMA
+#define FILLRECT_PIXELS			240
+#define FILLRECT_BUFFER_SIZE	(FILLRECT_PIXELS * BYTE_PER_PIXEL)
+//#define SD_DUMMY_BYTE            0xFF
 
 void SendData(uint16_t data);
 void SendCommand(uint8_t data);
@@ -163,7 +176,23 @@ void DISPLAY_SPI1_Init();
 void ILI9341_Init();
 void DisplaySoftOn();
 void DisplaySoftOff();
-void ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color);
 
+
+
+typedef enum {
+	TRANSFER_WAIT,
+	TRANSFER_COMPLETE,
+	TRANSFER_ERROR
+} e_dma_transfer_state;
+
+typedef struct {
+  uint16_t  	 width;
+  uint8_t  	 height;
+  uint8_t  	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */
+  uint8_t 	pixel_data[48 * 48 * 2];
+} s_image;
+
+HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t color);
+HAL_StatusTypeDef ILI9341_displaybitmap(uint16_t x, uint16_t y, uint16_t widthi, uint16_t heighti, s_image* image);
 
 #endif /* ILI9341_SPI_ILI9341_SPI_H_ */

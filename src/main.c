@@ -2,11 +2,14 @@
 
 /* The indicator LED connect to C port 13-th PIN */
 
+#include <stdlib.h>
 #include "stm32f1xx_hal.h"
 #include "interrupts.h"
 #include "init.h"
 #include "sd_spi.h"
 #include "ili9341_spi.h"
+
+extern s_image button;
 
 /**
  System Clock, and osc configuration for 8000000 Hz Minimal STM 32 board.
@@ -45,9 +48,13 @@ void SystemClock_Config(void)
 
 
 uint8_t buffer[1000];
-uint8_t i;
+uint8_t i = 0;
 
 char cid_string[6];
+
+uint16_t colors[8] = {	0b1111100000000000,
+						0b0000011111100000,
+						0b0000000000011111};
 
 int main()
 {
@@ -62,19 +69,24 @@ int main()
 
 	DISPLAY_SPI1_Init();
 	ILI9341_Init();
-uint8_t color;
+
+	ILI9341_fillrectangle(0, 0, 240, 320, 0xFFFF);
+	ILI9341_displaybitmap(10, 10, 34, 54, &button);
+
 /* Main program loop. */
 	while (1)
 	{	
 		
 		while (1)
 		{
-			HAL_Delay(500);
-//			DisplaySoftOn();
-			ILI9341_fillrectangle(10, 10, 40, 60, color);
-			color += 0x010;
+
+			HAL_Delay(50);
+
 //			DISPLAY_ON();
-//			HAL_Delay(500);
+//			ILI9341_fillrectangle(0, 0, 240, 320, colors[i]);
+			if (++i > 2) i = 0;
+			DisplaySoftOn();
+			HAL_Delay(50);
 //			DisplaySoftOff();
 //			DISPLAY_OFF();
 		}
