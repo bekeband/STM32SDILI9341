@@ -25,7 +25,8 @@ const uint8_t datas_pw2[] = {0x10};
 const uint8_t datas_vcom1[] = {0x3E, 0x28};
 const uint8_t datas_vcom2[] = {0x86};
 const uint8_t datas_mac[] = {0x48};
-const uint8_t datas_pform[] = {0x55};
+const uint8_t datas_pform_18_bits[] = {0x66};
+const uint8_t datas_pform_16_bits[] = {0x55};
 const uint8_t datas_frc[] = {0x00, 0x18};
 const uint8_t datas_dfc[] = {0x08, 0x82, 0x27};
 const uint8_t datas_gen[] = {0x00};
@@ -38,6 +39,10 @@ const uint8_t datas_ngamma[] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 
 #if defined (ILI9341_DMA)
 static DMA_HandleTypeDef hdma_spi1_tx;
 static DMA_HandleTypeDef hdma_spi1_rx;
+
+/*
+ * Global variable because may set this value of the transfer complete DMA interrupt routine.
+ */
 
 e_dma_transfer_state wTransferState;
 
@@ -63,59 +68,6 @@ static SPI_HandleTypeDef 	display_spi1_handle =
 .Init.TIMode             = SPI_TIMODE_DISABLE,
 .Init.Mode               = SPI_MODE_MASTER
 };
-
-DMA_HandleTypeDef OpenMemoryToDisplayDMAChannel(SPI_HandleTypeDef* handle)
-{	DMA_HandleTypeDef result;
-
-	/* Associate the initialized DMA handle to the the SPI handle */
-	__HAL_LINKDMA(handle, hdmatx, result);
-
-	/* Configure the DMA handler for Transmission process */
-	result.Instance                 	= DISPLAY_TX_DMA_CHANNEL;
-	result.Init.Direction           	= DMA_MEMORY_TO_PERIPH;
-	result.Init.PeriphInc           	= DMA_PINC_DISABLE;
-	result.Init.MemInc              	= DMA_MINC_ENABLE;
-	result.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_BYTE;
-	result.Init.MemDataAlignment    	= DMA_MDATAALIGN_BYTE;
-	result.Init.Mode                	= DMA_NORMAL;
-	result.Init.Priority            	= DMA_PRIORITY_HIGH;
-
-	HAL_DMA_Init(&result);
-
-    /*##-4- Configure the NVIC for DMA #########################################*/
-    /* NVIC configuration for DMA transfer complete interrupt (SPI2_TX) */
-    HAL_NVIC_SetPriority(DISPLAY_DMA_TX_IRQn, 1, 1);
-    HAL_NVIC_EnableIRQ(DISPLAY_DMA_TX_IRQn);
-
-
-	return result;
-}
-
-DMA_HandleTypeDef OpenDisplayToMemoryDMAChannel(SPI_HandleTypeDef* handle)
-{	DMA_HandleTypeDef result;
-
-	/* Configure the DMA handler for Transmission process */
-	result.Instance                 	= DISPLAY_RX_DMA_CHANNEL;
-	result.Init.Direction           	= DMA_PERIPH_TO_MEMORY;
-	result.Init.PeriphInc           	= DMA_PINC_DISABLE;
-	result.Init.MemInc              	= DMA_MINC_ENABLE;
-	result.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_BYTE;
-	result.Init.MemDataAlignment    	= DMA_MDATAALIGN_BYTE;
-	result.Init.Mode                	= DMA_NORMAL;
-	result.Init.Priority            	= DMA_PRIORITY_HIGH;
-
-	HAL_DMA_Init(&result);
-
-    /*##-4- Configure the NVIC for DMA #########################################*/
-    /* NVIC configuration for DMA transfer complete interrupt (SPI2_TX) */
-    HAL_NVIC_SetPriority(DISPLAY_DMA_RX_IRQn, 1, 1);
-    HAL_NVIC_EnableIRQ(DISPLAY_DMA_RX_IRQn);
-
-	/* Associate the initialized DMA handle to the the SPI handle */
-	__HAL_LINKDMA(handle, hdmatx, result);
-
-	return result;
-}
 
 
 /* @brief DISPLAY_SPI1_Init(): initialize SPI 1 signals for ILI9341 DISPLAY SPI communication,
@@ -185,37 +137,49 @@ void DISPLAY_SPI1_Init()
 
 }
 
-void ILI9341_writecmd(uint8_t cmd)
-{
+HAL_StatusTypeDef ILI9341_writecmd(uint8_t cmd)
+{	HAL_StatusTypeDef result;
 	SELECT_DISPLAY();
 	SELECT_COMMAND();
-	if (HAL_SPI_Transmit(&display_spi1_handle, &cmd, sizeof(uint8_t), DISPLAY_SPI_TRANSMIT_TIMEOUT) != HAL_OK)
-	{
-
-	}
+	result = HAL_SPI_Transmit(&display_spi1_handle, &cmd, sizeof(uint8_t), DISPLAY_SPI_TRANSMIT_TIMEOUT);
 	DESELECT_DISPLAY();
+	return result;
 }
 
-void ILI9341_writedatas(uint8_t* data, int size)
-{
+HAL_StatusTypeDef ILI9341_writedatas(uint8_t* data, int size)
+{	HAL_StatusTypeDef result;
 	SELECT_DISPLAY();
 	SELECT_DATA();
-	if (HAL_SPI_Transmit(&display_spi1_handle, data, size, DISPLAY_SPI_TRANSMIT_TIMEOUT) != HAL_OK)
-	{
-
-	}
+	result = HAL_SPI_Transmit(&display_spi1_handle, data, size, DISPLAY_SPI_TRANSMIT_TIMEOUT);
 	DESELECT_DISPLAY();
+	return result;
 }
 
-void ILI9341_writedata(uint8_t data)
-{
+HAL_StatusTypeDef ILI9341_readdatas(uint8_t* data, int size)
+{	HAL_StatusTypeDef result;
 	SELECT_DISPLAY();
 	SELECT_DATA();
-	if (HAL_SPI_Transmit(&display_spi1_handle, &data, sizeof(uint8_t), DISPLAY_SPI_TRANSMIT_TIMEOUT) != HAL_OK)
-	{
-
-	}
+	result = HAL_SPI_Receive(&display_spi1_handle, data, size, DISPLAY_SPI_TRANSMIT_TIMEOUT);
 	DESELECT_DISPLAY();
+	return result;
+}
+
+HAL_StatusTypeDef ILI9341_writedata(uint8_t data)
+{	HAL_StatusTypeDef result;
+	SELECT_DISPLAY();
+	SELECT_DATA();
+	result = HAL_SPI_Transmit(&display_spi1_handle, &data, sizeof(uint8_t), DISPLAY_SPI_TRANSMIT_TIMEOUT);
+	DESELECT_DISPLAY();
+	return result;
+}
+
+HAL_StatusTypeDef ILI9341_readdata(uint8_t* data)
+{	HAL_StatusTypeDef result;
+	SELECT_DISPLAY();
+	SELECT_DATA();
+	result = HAL_SPI_Receive(&display_spi1_handle, data, sizeof(uint8_t), DISPLAY_SPI_TRANSMIT_TIMEOUT);
+	DESELECT_DISPLAY();
+	return result;
 }
 
 void ILI9341_Init()
@@ -268,9 +232,9 @@ void ILI9341_Init()
 	#endif
 	  ILI9341_writecmd(ILI9341_PIXEL_FORMAT);
 	#ifdef PIXEL_FORMAT_18_BIT
-	  SendData(0x66);	// 18 bits pixel format
+	  ILI9341_writedatas((uint8_t*)&datas_pform_18_bits, sizeof(datas_pform_18_bits));
 	#else
-	  ILI9341_writedatas((uint8_t*)&datas_pform, sizeof(datas_pform));
+	  ILI9341_writedatas((uint8_t*)&datas_pform_16_bits, sizeof(datas_pform_16_bits));
 	#endif
 	  ILI9341_writecmd(ILI9341_FRC);
 	  ILI9341_writedatas((uint8_t*)&datas_frc, sizeof(datas_frc));
@@ -293,7 +257,7 @@ void ILI9341_Init()
 	  HAL_Delay(200);
 
 	  ILI9341_writecmd(ILI9341_DISPLAY_ON);
-	  ILI9341_writecmd(ILI9341_GRAM);
+	  ILI9341_writecmd(ILI9341_RAMWR);
 }
 
 void ILI9341_setaddr(uint8_t x1,uint8_t y1,uint16_t x2,uint16_t y2)
@@ -323,32 +287,81 @@ void DisplaySoftOff()
 	ILI9341_writecmd(ILI9341_DISPLAY_OFF);
 }
 
-#if defined (ILI9341_DMA)
-
 /*
- *
+ * @brief: ILI9341_buf_to_disp(void* pixelptr, uint16_t DT) Write the buffer to the display.
+ * @params: void* pixelptr next pixel buffer pointer. uint16_t size: buffer size in byte.
  */
 
-HAL_StatusTypeDef SPI_Transmit_DMA_HW(SPI_HandleTypeDef *hspi, void* pData, uint32_t Size)
-{ 	int32_t remain = Size; uint32_t DT;
-	uint8_t last_remain = 0;
-do
+HAL_StatusTypeDef ILI9341_buf_to_disp(void* pixelptr, uint16_t size)
 {
-	if ((remain - 0x10000) >= 0) { DT = 0xFFFF; remain -= 0x10000lu;
-	} else
-	{ last_remain = 1; DT = remain; }
-
-    wTransferState = TRANSFER_WAIT;
-    if (HAL_SPI_Transmit_DMA(hspi, pData, DT) != HAL_OK)
-    {
-  	  return HAL_ERROR;
-    }
-    while (wTransferState != TRANSFER_COMPLETE){ };
-} while (!last_remain);
-return HAL_OK;
-}
+	/*
+	 * Transfer help with DMA...
+	 */
+#if defined (ILI9341_DMA)
+	wTransferState = TRANSFER_WAIT;
+	if (HAL_SPI_Transmit_DMA(&display_spi1_handle, pixelptr, size) != HAL_OK)
+	{
+		return HAL_ERROR;
+	}
+	while (wTransferState != TRANSFER_COMPLETE){ };
+#else
+	/*
+	 * Transfer without helping DMA...
+	 */
+	int i; uint8_t* ptr = pixelptr;
+	for (i = 0; i < size; i++)
+	{
+		ILI9341_writedata((*ptr));
+		ptr++;
+	};
 
 #endif
+	return HAL_OK;
+}
+
+/*
+ * @brief: ILI9341_disp_to_buf(void* pixelptr, uint16_t DT) Read to the the buffer from the display.
+ * @params: void* pixelptr next pixel buffer pointer. uint16_t size: buffer size in byte.
+ */
+
+HAL_StatusTypeDef ILI9341_disp_to_buf(void* pixelptr, uint16_t size)
+{
+	/*
+	 * Transfer help with DMA...
+	 */
+#if defined (ILI9341_DMA)
+	wTransferState = TRANSFER_WAIT;
+	if (HAL_SPI_Transmit_DMA(&display_spi1_handle, pixelptr, size) != HAL_OK)
+	{
+		return HAL_ERROR;
+	}
+	while (wTransferState != TRANSFER_COMPLETE){ };
+#else
+	/*
+	 * Transfer without helping DMA...
+	 */
+	int i; uint8_t* ptr = pixelptr;
+//	ILI9341_writedata((DP_DUMMY_BYTE));
+	ILI9341_readdatas((ptr), size);
+/*	for (i = 0; i < size; i++)
+	{
+//		ILI9341_writedata((DP_DUMMY_BYTE));
+		ILI9341_readdata((ptr));
+		ptr++;
+	};*/
+
+#endif
+	return HAL_OK;
+}
+
+HAL_StatusTypeDef ILI9341_getpixels(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t* pixels)
+{
+	ILI9341_setaddr(x, y, x + width - 1, y + height - 1);
+	ILI9341_writecmd(ILI9341_RAMRD);
+	ILI9341_writedata(DP_DUMMY_BYTE);
+	ILI9341_disp_to_buf(pixels, SCR_BUFFER_SIZE);
+	return HAL_OK;
+};
 
 /*
  * HAL_StatusTypeDef ILI9341_displaybitmap(uint16_t x, uint16_t y, uint16_t width, uint16_t height, void* buffer, int BufSize)
@@ -356,15 +369,8 @@ return HAL_OK;
 
 HAL_StatusTypeDef ILI9341_displaybitmap(uint16_t x, uint16_t y, uint16_t widthi, uint16_t heighti, s_image* image)
 {
-
 	ILI9341_setaddr(x, y, x + image->width - 1, y + image->height - 1);
-	ILI9341_writecmd(ILI9341_GRAM);
-
-#if defined (ILI9341_DMA)
-
-	/*
-	 * Make the filled buffer for to fill the color bytes.
-	 */
+	ILI9341_writecmd(ILI9341_RAMWR);
 
 	uint8_t* fillbuffer; int i, j; int32_t DT, remain; int last_remain; HAL_StatusTypeDef result;
 	uint8_t* pixelptr = image->pixel_data;
@@ -373,38 +379,23 @@ HAL_StatusTypeDef ILI9341_displaybitmap(uint16_t x, uint16_t y, uint16_t widthi,
 	  remain = (image->width * image->height * BYTE_PER_PIXEL);
 	  do
 	  {
-	  	if ((remain - FILLRECT_BUFFER_SIZE) > 0)
+	  	if ((remain - SCR_BUFFER_SIZE) > 0)
 	  	{
 	  		last_remain = 0;
-	  		DT = FILLRECT_BUFFER_SIZE;
-	  		remain -= FILLRECT_BUFFER_SIZE;
+	  		DT = SCR_BUFFER_SIZE;
+	  		remain -= SCR_BUFFER_SIZE;
 	  	} else
 	  	{
 	  		last_remain = 1;
 	  		DT = remain;
 	  	}
-
-	  	  wTransferState = TRANSFER_WAIT;
-	  	  if (HAL_SPI_Transmit_DMA(&display_spi1_handle, pixelptr, DT) != HAL_OK)
-	  	    {
-	  	  	  result = HAL_ERROR;
-	  	    }
-	  	  pixelptr += FILLRECT_BUFFER_SIZE;
-	  	  while (wTransferState != TRANSFER_COMPLETE){ };
+	  	if (ILI9341_buf_to_disp(pixelptr, DT) != HAL_OK)
+	  	{
+	  		return HAL_ERROR;
+	  	}
+	  	  pixelptr += SCR_BUFFER_SIZE;
 
 	  } while (!last_remain);
-
-
-#else
-	  uint8_t ch, cl; int i;
-	for (i = 0; i < (width * height) - 1; i++)
-	{
-		ch = (color & 0xFF00) >> 8;
-		cl = (color & 0xFF);
-		ILI9341_writedata(ch);
-		ILI9341_writedata(cl);
-	}
-#endif
 	return HAL_OK;
 }
 
@@ -414,20 +405,18 @@ HAL_StatusTypeDef ILI9341_displaybitmap(uint16_t x, uint16_t y, uint16_t widthi,
   * @retval None
   */
 
-HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t color)
+HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, t_color color)
 {	HAL_StatusTypeDef result = HAL_OK;
 	ILI9341_setaddr(x, y, x + width - 1, y + height - 1);
-	ILI9341_writecmd(ILI9341_GRAM);
-
-#if defined (ILI9341_DMA)
-
+	ILI9341_writecmd(ILI9341_RAMWR);
 
 	/*
 	 * Make the filled buffer for to fill the color bytes.
 	 */
 
-	uint8_t* fillbuffer; int i, j; int32_t DT, remain; int last_remain; uint8_t* cc = (uint8_t*)&color;
-	if ((fillbuffer = malloc(FILLRECT_BUFFER_SIZE)) == NULL)
+	uint8_t* fillbuffer; int i, j; uint16_t pixels; int32_t remain; int last_remain;
+	// uint8_t* cc = (uint8_t*)&color;
+	if ((fillbuffer = malloc(SCR_BUFFER_SIZE)) == NULL)
 		{
 			ForceErrorNumber(5);
 			return HAL_ERROR;
@@ -436,11 +425,11 @@ HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, 
 	/*
 	 * Load the fill buffer for color datas.
 	 */
-	for (i = 0; i < FILLRECT_BUFFER_SIZE; i += BYTE_PER_PIXEL)
+	for (i = 0; i < SCR_BUFFER_SIZE; i += BYTE_PER_PIXEL)
 	{
 		for (j = 0; j < BYTE_PER_PIXEL; j++)
 		{
-			fillbuffer[j + i] = cc[(BYTE_PER_PIXEL - 1) - j];
+			fillbuffer[j + i] = (color[j] & 0b11111100);
 		}
 	}
 
@@ -448,38 +437,23 @@ HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, 
 	  remain = (width * height * BYTE_PER_PIXEL);
 	  do
 	  {
-	  	if ((remain - FILLRECT_BUFFER_SIZE) > 0)
-	  	{
+		if ((remain - SCR_BUFFER_SIZE) > 0)
+		{
+	  		pixels = SCR_BUFFER_SIZE;
+	  		remain = remain - SCR_BUFFER_SIZE;
 	  		last_remain = 0;
-	  		DT = FILLRECT_BUFFER_SIZE;
-	  		remain -= FILLRECT_BUFFER_SIZE;
-	  	} else
+		} else
+		{
+			pixels = (remain);
+			last_remain = 1;
+		}
+
+	  	if (ILI9341_buf_to_disp(fillbuffer, pixels) != HAL_OK)
 	  	{
-	  		last_remain = 1;
-	  		DT = remain;
+	  		return HAL_ERROR;
 	  	}
 
-	  	  wTransferState = TRANSFER_WAIT;
-	  	  if (HAL_SPI_Transmit_DMA(&display_spi1_handle, fillbuffer, DT) != HAL_OK)
-	  	    {
-	  	  	  result = HAL_ERROR;
-	  	    }
-	  	  while (wTransferState != TRANSFER_COMPLETE){ };
-
 	  } while (!last_remain);
-
-
-
-#else
-	  uint8_t ch, cl; int i;
-	for (i = 0; i < (width * height) - 1; i++)
-	{
-		ch = (color & 0xFF00) >> 8;
-		cl = (color & 0xFF);
-		ILI9341_writedata(ch);
-		ILI9341_writedata(cl);
-	}
-#endif
 
 	free(fillbuffer);
 	return result;

@@ -125,7 +125,8 @@
 #define ILI9341_DISPLAY_ON			0x29
 #define ILI9341_COLUMN_ADDR			0x2A
 #define ILI9341_PAGE_ADDR			0x2B
-#define ILI9341_GRAM				0x2C
+#define ILI9341_RAMWR				0x2C
+#define ILI9341_RAMRD				0x2E
 #define ILI9341_MAC					0x36
 #define ILI9341_PIXEL_FORMAT		0x3A
 #define ILI9341_WDB					0x51
@@ -152,13 +153,28 @@
 #define ILI9341_READDID4			0xD3
 
 #define RGB_BGR_COLOR
-#define BYTE_PER_PIXEL	2
-#define WORD_PER_PIXEL	1
 
-#define ILI9341_DMA
-#define FILLRECT_PIXELS			240
-#define FILLRECT_BUFFER_SIZE	(FILLRECT_PIXELS * BYTE_PER_PIXEL)
-//#define SD_DUMMY_BYTE            0xFF
+#define PIXEL_FORMAT_18_BIT
+
+#ifdef PIXEL_FORMAT_18_BIT
+#define BYTE_PER_PIXEL	3
+typedef uint8_t t_color[3];
+#else
+#define BYTE_PER_PIXEL	2
+typedef uint8_t t_color[2];
+#endif
+
+//#define ILI9341_DMA
+
+/*
+ * screen fillerect, and imagerect (get/set) procedures buffer's size in pixel.
+ */
+#define SCR_BUFFER_IN_PIXELS	240
+/*
+ * The real fillrect buffer size.
+ */
+#define SCR_BUFFER_SIZE	(SCR_BUFFER_IN_PIXELS * BYTE_PER_PIXEL)
+
 
 void SendData(uint16_t data);
 void SendCommand(uint8_t data);
@@ -177,7 +193,7 @@ void ILI9341_Init();
 void DisplaySoftOn();
 void DisplaySoftOff();
 
-
+#define DP_DUMMY_BYTE	(0xFF)
 
 typedef enum {
 	TRANSFER_WAIT,
@@ -189,10 +205,12 @@ typedef struct {
   uint16_t  	 width;
   uint8_t  	 height;
   uint8_t  	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */
-  uint8_t 	pixel_data[48 * 48 * 2];
+  uint8_t 	pixel_data[160 * 100 * BYTE_PER_PIXEL];
 } s_image;
 
-HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t color);
+HAL_StatusTypeDef ILI9341_fillrectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, t_color color);
 HAL_StatusTypeDef ILI9341_displaybitmap(uint16_t x, uint16_t y, uint16_t widthi, uint16_t heighti, s_image* image);
+HAL_StatusTypeDef ILI9341_getpixels(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t* pixels);
+//HAL_StatusTypeDef ILI9341_getrectangle(uint16_t x, uint16_t y, uint16_t widthi, uint16_t heighti, uint8_t* image);
 
 #endif /* ILI9341_SPI_ILI9341_SPI_H_ */

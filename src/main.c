@@ -52,6 +52,8 @@ uint8_t i = 0;
 
 char cid_string[6];
 
+t_color color;
+
 uint16_t colors[8] = {	0b1111100000000000,
 						0b0000011111100000,
 						0b0000000000011111};
@@ -70,8 +72,14 @@ int main()
 	DISPLAY_SPI1_Init();
 	ILI9341_Init();
 
-	ILI9341_fillrectangle(0, 0, 240, 320, 0xFFFF);
-	ILI9341_displaybitmap(10, 10, 34, 54, &button);
+	color[0] = 0b0; //11111100;
+	color[1] = 0b0; //11111100;
+	color[2] = 0b0; //11111100;
+	ILI9341_fillrectangle(0, 0, 240, 320, color);
+//	ILI9341_displaybitmap(0, 0, 34, 54, &button);
+
+	uint8_t BF[SCR_BUFFER_SIZE];
+	ILI9341_getpixels(0, 0, 160, 100, &BF[0]);
 
 /* Main program loop. */
 	while (1)
