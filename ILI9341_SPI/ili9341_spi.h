@@ -104,15 +104,26 @@
 
 
 #define DISPLAY_SPI_TRANSMIT_TIMEOUT 1000
+
 /*
- * Define the display spi1 memory to periphera tx DMA channel.
+ * define, or not DMA helping for display spi communication?
  */
+#define ILI9341_DMA
+
+/*
+ * Define the display spi channel, and DMA channels for spi transmit, and receive.
+ *
+ */
+
+#define DISPLAY_SPI_CHANNEL	SPI1
+
+#if defined (ILI9341_DMA)
 #define DISPLAY_TX_DMA_CHANNEL	DMA1_Channel3
 #define DISPLAY_RX_DMA_CHANNEL	DMA1_Channel2
 
 #define DISPLAY_DMA_TX_IRQn	DMA1_Channel3_IRQn
 #define DISPLAY_DMA_RX_IRQn	DMA1_Channel2_IRQn
-
+#endif
 
 /*
  * defines ILI9341 commands ----------------------------------
@@ -163,8 +174,6 @@ typedef uint8_t t_color[3];
 #define BYTE_PER_PIXEL	2
 typedef uint8_t t_color[2];
 #endif
-
-//#define ILI9341_DMA
 
 /*
  * screen fillerect, and imagerect (get/set) procedures buffer's size in pixel.

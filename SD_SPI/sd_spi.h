@@ -299,6 +299,27 @@ typedef union {
 	uint8_t b;		
 } s_r1;
 
+#define SD_SPI_CHANNEL	SPI2
+
+/*
+ * Define the sd card spi channel, and DMA channels for spi transmit, and receive.
+ *
+ */
+
+#define SD_SPI_DMA
+
+
+#if defined (SD_SPI_DMA)
+/*
+ * Channels for SPI dma rec/trans from ST32F10XX programming guide.
+ */
+#define SD_SPI2_TX_DMA_CHANNEL	DMA1_Channel5
+#define SD_SPI2_RX_DMA_CHANNEL	DMA1_Channel4
+
+#define SD_SPI2_DMA_TX_IRQn	DMA1_Channel5_IRQn
+#define SD_SPI2_DMA_RX_IRQn	DMA1_Channel4_IRQn
+#endif
+
 #define SD_IN_IDLE	(0x01)	// SD card idle state, and no error anything else.
 #define SD_IN_DUTY	(0x00)	// SD card no idle state, and no any communication error.
 

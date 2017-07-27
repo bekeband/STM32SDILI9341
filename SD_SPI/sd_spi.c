@@ -23,7 +23,7 @@ SD_TYPE sd_type = VER_NONE;
  */
 
 static SPI_HandleTypeDef 	sd_spi2_handle = 
-{.Instance = SPI2, 
+{.Instance = SD_SPI_CHANNEL,
 .Init.BaudRatePrescaler  = SPI_BAUDRATEPRESCALER_256,
 .Init.Direction          = SPI_DIRECTION_2LINES,
 .Init.CLKPhase           = SPI_PHASE_2EDGE,

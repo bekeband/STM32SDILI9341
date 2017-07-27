@@ -55,7 +55,7 @@ e_dma_transfer_state wTransferState;
  */
 
 static SPI_HandleTypeDef 	display_spi1_handle =
-{.Instance = SPI1,
+{.Instance = DISPLAY_SPI_CHANNEL,
 .Init.BaudRatePrescaler  = SPI_BAUDRATEPRESCALER_2,
 .Init.Direction          = SPI_DIRECTION_2LINES,
 .Init.CLKPhase           = SPI_PHASE_1EDGE,
@@ -112,6 +112,10 @@ void DISPLAY_SPI1_Init()
 
 #if defined (ILI9341_DMA)
 
+
+	  /*
+	   * TX DMA channel programming, and enable.
+	   */
 	  /* Enable DMA clock */
 	  __HAL_RCC_DMA1_CLK_ENABLE();
 
@@ -130,6 +134,29 @@ void DISPLAY_SPI1_Init()
 
 	  HAL_NVIC_SetPriority(DISPLAY_DMA_TX_IRQn, 1, 1);
 	  HAL_NVIC_EnableIRQ(DISPLAY_DMA_TX_IRQn);
+
+	  /*
+	   * RX DMA channel programming, and enable.
+	   */
+
+	  /* Enable DMA clock */
+	  __HAL_RCC_DMA1_CLK_ENABLE();
+
+	  hdma_spi1_rx.Instance                 	= DISPLAY_RX_DMA_CHANNEL;
+	  hdma_spi1_rx.Init.Direction           	= DMA_PERIPH_TO_MEMORY;
+	  hdma_spi1_rx.Init.PeriphInc           	= DMA_PINC_DISABLE;
+	  hdma_spi1_rx.Init.MemInc              	= DMA_MINC_ENABLE;
+	  hdma_spi1_rx.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_BYTE;
+	  hdma_spi1_rx.Init.MemDataAlignment    	= DMA_MDATAALIGN_BYTE;
+	  hdma_spi1_rx.Init.Mode                	= DMA_NORMAL;
+	  hdma_spi1_rx.Init.Priority            	= DMA_PRIORITY_HIGH;
+
+	  HAL_DMA_Init(&hdma_spi1_rx);
+
+	  __HAL_LINKDMA(&display_spi1_handle, hdmarx, hdma_spi1_rx);
+
+	  HAL_NVIC_SetPriority(DISPLAY_DMA_RX_IRQn, 1, 1);
+	  HAL_NVIC_EnableIRQ(DISPLAY_DMA_RX_IRQn);
 
 
 #endif
@@ -331,7 +358,7 @@ HAL_StatusTypeDef ILI9341_disp_to_buf(void* pixelptr, uint16_t size)
 	 */
 #if defined (ILI9341_DMA)
 	wTransferState = TRANSFER_WAIT;
-	if (HAL_SPI_Transmit_DMA(&display_spi1_handle, pixelptr, size) != HAL_OK)
+	if (HAL_SPI_Receive_DMA(&display_spi1_handle, pixelptr, size) != HAL_OK)
 	{
 		return HAL_ERROR;
 	}
@@ -341,14 +368,7 @@ HAL_StatusTypeDef ILI9341_disp_to_buf(void* pixelptr, uint16_t size)
 	 * Transfer without helping DMA...
 	 */
 	int i; uint8_t* ptr = pixelptr;
-//	ILI9341_writedata((DP_DUMMY_BYTE));
 	ILI9341_readdatas((ptr), size);
-/*	for (i = 0; i < size; i++)
-	{
-//		ILI9341_writedata((DP_DUMMY_BYTE));
-		ILI9341_readdata((ptr));
-		ptr++;
-	};*/
 
 #endif
 	return HAL_OK;
@@ -472,9 +492,23 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 	wTransferState = TRANSFER_COMPLETE;
 }
 
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+	wTransferState = TRANSFER_COMPLETE;
+}
+
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
 {
 
+}
+
+/*
+ * This is an interrupt handle for DMA Display SPI tx channel.
+ */
+
+void DMA1_Channel2_IRQHandler(void)
+{
+	HAL_DMA_IRQHandler(display_spi1_handle.hdmarx);
 }
 
 /*

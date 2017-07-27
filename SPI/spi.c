@@ -53,7 +53,6 @@ void SPI_WriteByte(uint8_t Value, SPI_HandleTypeDef handle, uint32_t TimeOut)
 void SPI_WriteBuf(void* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
 {
   HAL_StatusTypeDef status = HAL_OK;
-
   status = HAL_SPI_Transmit(&handle, (uint8_t*) Buffer, size, TimeOut);
 
   /* Check the communication status */
@@ -72,7 +71,6 @@ void SPI_WriteBuf(void* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_
 void SPI_ReadBuf(uint8_t* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
 {
   HAL_StatusTypeDef status = HAL_OK;
-
   status = HAL_SPI_Receive(&handle, (uint8_t*) Buffer, size, TimeOut);
 
   /* Check the communication status */
@@ -94,6 +92,45 @@ void SPI_ReadByte(uint8_t* Value, SPI_HandleTypeDef handle, uint32_t TimeOut)
   HAL_StatusTypeDef status = HAL_OK;
 	
   status = HAL_SPI_Receive(&handle, (uint8_t*) Value, 1, TimeOut);
+
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Execute user timeout callback */
+    SPI_Error(handle);
+  }
+}
+
+
+/**
+  * @brief SPI_WriteBufDMA Write buffer bytes to the selected SPI port with DMA
+  * @param Value the pointer for buffer, size: size of buffer in bytes
+	* TimeOut the timeout value to write.
+  * @retval None
+  */
+
+void SPI_WriteBufDMA(void* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  status = HAL_SPI_Transmit(&handle, (uint8_t*) Buffer, size, TimeOut);
+
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Execute user timeout callback */
+    SPI_Error(handle);
+  }
+}
+
+/**
+  * @brief SPI_ReadBufDMA Read size of byte to the Buffer from SPI port designated by handle with DMA.
+  * @param Value the byte to read, TimeOut the timeout value to read.
+  * @retval None
+  */
+void SPI_ReadBufDMA(uint8_t* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  status = HAL_SPI_Receive(&handle, (uint8_t*) Buffer, size, TimeOut);
 
   /* Check the communication status */
   if(status != HAL_OK)

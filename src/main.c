@@ -72,9 +72,9 @@ int main()
 	DISPLAY_SPI1_Init();
 	ILI9341_Init();
 
-	color[0] = 0b0; //11111100;
-	color[1] = 0b0; //11111100;
-	color[2] = 0b0; //11111100;
+	color[0] = 0b11111100;
+	color[1] = 0b11111100;
+	color[2] = 0b11111100;
 	ILI9341_fillrectangle(0, 0, 240, 320, color);
 //	ILI9341_displaybitmap(0, 0, 34, 54, &button);
 
