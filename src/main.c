@@ -67,25 +67,25 @@ int main()
 	
 	Init_ErrLED();
 	
-	SD_SPI2_Init(); // Initialize SPI2 for SD card. 
+	SD_SPI2_Init(); 	// Initialize SPI2 for SD card.
 
-	DISPLAY_SPI1_Init();
+	DISPLAY_SPI1_Init();	// Initialize SPI1 for display.
 	ILI9341_Init();
 
-	color[0] = 0b11111100;
-	color[1] = 0b11111100;
-	color[2] = 0b11111100;
+	color[0] = 0b00100000;
+	color[1] = 0b10000100;
+	color[2] = 0b10000100;
 	ILI9341_fillrectangle(0, 0, 240, 320, color);
-//	ILI9341_displaybitmap(0, 0, 34, 54, &button);
+//	ILI9341_displaybitmap(0, 0, 80, 60, &button);
 
-	uint8_t BF[SCR_BUFFER_SIZE];
-	ILI9341_getpixels(0, 0, 160, 100, &BF[0]);
+//	uint8_t BF[SCR_BUFFER_SIZE];
+//	ILI9341_getpixels(0, 0, 80, 60, &BF[0]);
 
 /* Main program loop. */
 	while (1)
 	{	
 		
-		while (1)
+/*		while (1)
 		{
 
 			HAL_Delay(50);
@@ -94,10 +94,10 @@ int main()
 //			ILI9341_fillrectangle(0, 0, 240, 320, colors[i]);
 			if (++i > 2) i = 0;
 			DisplaySoftOn();
-			HAL_Delay(50);
-//			DisplaySoftOff();
+			HAL_Delay(150);
+			DisplaySoftOff();
 //			DISPLAY_OFF();
-		}
+		}*/
 
 		if (GetSDCardCheckFlag())
 		{
@@ -106,10 +106,17 @@ int main()
 			if (ResetCard() == SD_SPI_OK)
 			{	
 				ForceErrorNumber(4);
-				SPIModeInitialize();
-				GetCIDRegister(cid_string);
-//				GetCSDRegister();
-				ReadDataBlock(i++, (uint8_t*)&buffer);
+				if (SPIModeInitialize() == SD_SPI_OK)
+				{
+					SetFastSPI();
+
+					GetCIDRegister(cid_string);
+	//				GetCSDRegister();
+					ReadDataBlock(i++, (uint8_t*)&buffer);
+				} else
+				{
+					ForceErrorNumber(3);
+				}
 			} else
 			{
 				ForceErrorNumber(2);				

@@ -40,11 +40,6 @@ const uint8_t datas_ngamma[] = {0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 
 static DMA_HandleTypeDef hdma_spi1_tx;
 static DMA_HandleTypeDef hdma_spi1_rx;
 
-/*
- * Global variable because may set this value of the transfer complete DMA interrupt routine.
- */
-
-e_dma_transfer_state wTransferState;
 
 #endif
 
@@ -56,7 +51,7 @@ e_dma_transfer_state wTransferState;
 
 static SPI_HandleTypeDef 	display_spi1_handle =
 {.Instance = DISPLAY_SPI_CHANNEL,
-.Init.BaudRatePrescaler  = SPI_BAUDRATEPRESCALER_2,
+.Init.BaudRatePrescaler  = SPI_BAUDRATEPRESCALER_4,
 .Init.Direction          = SPI_DIRECTION_2LINES,
 .Init.CLKPhase           = SPI_PHASE_1EDGE,
 .Init.CLKPolarity        = SPI_POLARITY_LOW,
@@ -325,12 +320,7 @@ HAL_StatusTypeDef ILI9341_buf_to_disp(void* pixelptr, uint16_t size)
 	 * Transfer help with DMA...
 	 */
 #if defined (ILI9341_DMA)
-	wTransferState = TRANSFER_WAIT;
-	if (HAL_SPI_Transmit_DMA(&display_spi1_handle, pixelptr, size) != HAL_OK)
-	{
-		return HAL_ERROR;
-	}
-	while (wTransferState != TRANSFER_COMPLETE){ };
+	return SPI_WriteBufDMA(pixelptr, size, display_spi1_handle, DISPLAY_SPI_TRANSMIT_TIMEOUT);
 #else
 	/*
 	 * Transfer without helping DMA...
@@ -357,12 +347,7 @@ HAL_StatusTypeDef ILI9341_disp_to_buf(void* pixelptr, uint16_t size)
 	 * Transfer help with DMA...
 	 */
 #if defined (ILI9341_DMA)
-	wTransferState = TRANSFER_WAIT;
-	if (HAL_SPI_Receive_DMA(&display_spi1_handle, pixelptr, size) != HAL_OK)
-	{
-		return HAL_ERROR;
-	}
-	while (wTransferState != TRANSFER_COMPLETE){ };
+	return SPI_ReadBufDMA(pixelptr, size, display_spi1_handle, DISPLAY_SPI_TRANSMIT_TIMEOUT);
 #else
 	/*
 	 * Transfer without helping DMA...
@@ -487,20 +472,6 @@ void ILI9341_draw(uint8_t *buff)
 }
 
 #if defined (ILI9341_DMA)
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
-{
-	wTransferState = TRANSFER_COMPLETE;
-}
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi)
-{
-	wTransferState = TRANSFER_COMPLETE;
-}
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
-{
-
-}
 
 /*
  * This is an interrupt handle for DMA Display SPI tx channel.

@@ -3,6 +3,22 @@
 #include "spi.h"
 
 
+/*
+ * Global variable because may set this value of the transfer complete DMA interrupt routine.
+ */
+
+#if defined (SPI1_W_DMA)
+
+e_dma_transfer_state SPI1_DMA_TransferState;
+
+#endif
+
+#if defined (SPI2_W_DMA)
+
+e_dma_transfer_state SPI2_DMA_TransferState;
+
+#endif
+
 /* @brief Handle for SPI general error.  
  * @TODO What we are to do?   
  * */
@@ -101,6 +117,19 @@ void SPI_ReadByte(uint8_t* Value, SPI_HandleTypeDef handle, uint32_t TimeOut)
   }
 }
 
+e_dma_transfer_state* GetTransferStatePtr(SPI_HandleTypeDef* handle)
+{
+	if (handle->Instance == SPI1)
+	{
+		return &SPI1_DMA_TransferState;
+	} else
+	if (handle->Instance == SPI2)
+	{
+		return &SPI2_DMA_TransferState;
+	} else
+		return NULL;
+}
+
 
 /**
   * @brief SPI_WriteBufDMA Write buffer bytes to the selected SPI port with DMA
@@ -109,17 +138,20 @@ void SPI_ReadByte(uint8_t* Value, SPI_HandleTypeDef handle, uint32_t TimeOut)
   * @retval None
   */
 
-void SPI_WriteBufDMA(void* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
-{
-  HAL_StatusTypeDef status = HAL_OK;
-  status = HAL_SPI_Transmit(&handle, (uint8_t*) Buffer, size, TimeOut);
-
-  /* Check the communication status */
-  if(status != HAL_OK)
-  {
-    /* Execute user timeout callback */
-    SPI_Error(handle);
-  }
+HAL_StatusTypeDef SPI_WriteBufDMA(void* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
+{	e_dma_transfer_state* state;
+	state = GetTransferStatePtr(&handle);
+	*state = TRANSFER_WAIT;
+	if (HAL_SPI_Transmit_DMA(&handle, Buffer, size) != HAL_OK)
+	{
+		return HAL_ERROR;
+	} else
+	{
+	    /* Execute user timeout callback */
+	    SPI_Error(handle);
+	}
+	while (*state != TRANSFER_COMPLETE){ };
+	return HAL_OK;
 }
 
 /**
@@ -127,15 +159,39 @@ void SPI_WriteBufDMA(void* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint
   * @param Value the byte to read, TimeOut the timeout value to read.
   * @retval None
   */
-void SPI_ReadBufDMA(uint8_t* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
-{
-  HAL_StatusTypeDef status = HAL_OK;
-  status = HAL_SPI_Receive(&handle, (uint8_t*) Buffer, size, TimeOut);
-
-  /* Check the communication status */
-  if(status != HAL_OK)
-  {
-    /* Execute user timeout callback */
-    SPI_Error(handle);
-  }
+HAL_StatusTypeDef SPI_ReadBufDMA(uint8_t* Buffer, uint16_t size, SPI_HandleTypeDef handle, uint32_t TimeOut)
+{	e_dma_transfer_state* state;
+	state = GetTransferStatePtr(&handle);
+	*state = TRANSFER_WAIT;
+	if (HAL_SPI_Receive_DMA(&handle, Buffer, size) != HAL_OK)
+	{
+		return HAL_ERROR;
+	} else
+	{
+	    /* Execute user timeout callback */
+	    SPI_Error(handle);
+	}
+	while (*state != TRANSFER_COMPLETE){ };
+	return HAL_OK;
 }
+
+#if defined (SPI1_W_DMA)
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
+{	e_dma_transfer_state* state;
+	state = GetTransferStatePtr(hspi);
+	*state = TRANSFER_COMPLETE;
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi)
+{	e_dma_transfer_state* state;
+	state = GetTransferStatePtr(hspi);
+	*state = TRANSFER_COMPLETE;
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
+{
+
+}
+
+#endif
+

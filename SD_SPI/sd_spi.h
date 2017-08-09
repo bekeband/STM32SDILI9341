@@ -382,6 +382,8 @@ typedef enum {
 void SD_SPI2_Init(); 
 void SD_Card_SPI_Select(); 
 
+void SetFastSPI();
+
 SD_SPI_STATE SPIModeInitialize();
 
 /* @brief ResetCard() */
@@ -400,6 +402,8 @@ SD_SPI_STATE GetCIDRegister();
 SD_SPI_STATE GetCSDRegister();
 
 SD_SPI_STATE WaitForPattern(uint8_t pattern, SPI_HandleTypeDef handle, uint32_t TimeOut);
+
+
 
 uint16_t crc16(uint8_t* data_p, int length);
 

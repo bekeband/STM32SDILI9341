@@ -102,7 +102,6 @@
 #define DISPLAY_ON()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_LCD_PIN, GPIO_PIN_RESET)
 #define DISPLAY_OFF()	HAL_GPIO_WritePin(DISPLAY_CONTROL_PORT, DISPLAY_LCD_PIN, GPIO_PIN_SET)
 
-
 #define DISPLAY_SPI_TRANSMIT_TIMEOUT 1000
 
 /*
@@ -203,12 +202,6 @@ void DisplaySoftOn();
 void DisplaySoftOff();
 
 #define DP_DUMMY_BYTE	(0xFF)
-
-typedef enum {
-	TRANSFER_WAIT,
-	TRANSFER_COMPLETE,
-	TRANSFER_ERROR
-} e_dma_transfer_state;
 
 typedef struct {
   uint16_t  	 width;

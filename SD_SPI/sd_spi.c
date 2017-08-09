@@ -26,8 +26,8 @@ static SPI_HandleTypeDef 	sd_spi2_handle =
 {.Instance = SD_SPI_CHANNEL,
 .Init.BaudRatePrescaler  = SPI_BAUDRATEPRESCALER_256,
 .Init.Direction          = SPI_DIRECTION_2LINES,
-.Init.CLKPhase           = SPI_PHASE_2EDGE,
-.Init.CLKPolarity        = SPI_POLARITY_HIGH,
+.Init.CLKPhase           = SPI_PHASE_1EDGE,
+.Init.CLKPolarity        = SPI_POLARITY_LOW,
 .Init.CRCCalculation     = SPI_CRCCALCULATION_DISABLE,
 .Init.CRCPolynomial      = 7,
 .Init.DataSize           = SPI_DATASIZE_8BIT,
@@ -105,6 +105,12 @@ void SD_SPI2_Init()
 	SPI_Init(&sd_spi2_handle);
 
 } 
+
+void SetFastSPI()
+{
+	sd_spi2_handle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	SPI_Init(&sd_spi2_handle);
+}
 
 /*
  * SD_SPI_R1_Error(s_r1 R1) Callback if the SD card response in the R1 byte the several errors.
@@ -218,6 +224,7 @@ SD_SPI_STATE SPIModeInitialize()
 {
 	s_command command; s_args args; s_r1 r1; s_args resp;
 	e_resp_voltage resp_voltage; uint8_t cmd8_counter = CMD8_RETRY; uint16_t ACMD41_counter = ACMD41_RETRY;
+	uint16_t CMD58_counter = ACMD41_RETRY;
 
 	/* SEND_IF_COND (CMD8) is used to verify SD Memory Card interface operating condition. The argument
 	 * format of CMD8 is the same as defined in SD mode and the response format of CMD8 is defined in
@@ -304,8 +311,7 @@ SD_SPI_STATE SPIModeInitialize()
 		{
 		  SD_SPI_ReadLongResponse(&resp, sd_spi2_handle, SD_SPI2_TIMEOUT);
 		};
-	} else return SD_ERROR;
-
+	};
 
 	/* The "in idle state" bit in the R1 response of ACMD41
 	is used by the card to inform the host if initialization of ACMD41 is completed. Setting this bit to "1"
@@ -330,16 +336,20 @@ SD_SPI_STATE SPIModeInitialize()
         	SendSDCommand(APP_SEND_OP_COND, args);
         	if (!(SD_SPI_WaitValidResponse(&r1, sd_spi2_handle, SD_RESET_CARD_TIMEOUT) == SD_SPI_OK))
         	{
-        		return SD_ERROR;
-        	};
-    	} else return SD_ERROR;
+
+        	}
+    	};
     }
+
+    if (!ACMD41_counter) return SD_ERROR;
 
     /* Initialization completed. The card is not in idle state.
      * After initialization is completed, the host should get CCS information in the response of CMD58. CCS is
      * valid when the card accepted CMD8 and after the completion of initialization. CCS=0 means that the card
      * is SDSD. CCS=1 means that the card is SDHC or SDXC.
      * */
+
+	r1.idle_state = 1;
 
 	args.argw = 0;
 
@@ -358,7 +368,7 @@ SD_SPI_STATE SPIModeInitialize()
 	Card.*/
 
 		};
-	} else return SD_ERROR;
+	};
 
 	return SD_SPI_OK;
 }
